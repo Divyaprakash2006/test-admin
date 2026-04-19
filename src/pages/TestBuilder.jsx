@@ -30,10 +30,11 @@ export default function TestBuilder() {
   const isDark    = theme === 'dark';
   const isEdit    = Boolean(id);
 
-  const [form, setForm]         = useState({ title: '', description: '', duration: 30, scheduledDate: '' });
+  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, scheduledDate: '' });
   const [questions, setQuestions] = useState([emptyQ()]);
   const [activeQ, setActiveQ]   = useState(0);
   const [saving, setSaving]     = useState(false);
+  const [success, setSuccess]   = useState(false);
   const [testId, setTestId]     = useState(id || null);
   const [saved, setSaved]       = useState(isEdit);
   const [error, setError]       = useState('');
@@ -64,22 +65,38 @@ export default function TestBuilder() {
           const d = new Date(t.scheduledDate);
           schedStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
         }
-        setForm({ title: t.title, description: t.description || '', duration: t.duration, scheduledDate: schedStr });
+        setForm({ 
+          title: t.title, 
+          subject: t.subject || '', 
+          description: t.description || '', 
+          duration: t.duration, 
+          passmark: t.passmark || 0,
+          scheduledDate: schedStr 
+        });
         if (t.questions?.length) setQuestions(t.questions);
       }).catch(() => setError('Failed to load test'));
     }
   }, [id, isEdit]);
 
   const saveTest = async () => {
-    setSaving(true); setError('');
+    setSaving(true); setError(''); setSuccess(false);
     try {
+      // Ensure scheduledDate is sent as a proper ISO string (standardizes timezone)
+      const payload = { 
+        ...form, 
+        scheduledDate: form.scheduledDate ? new Date(form.scheduledDate).toISOString() : null 
+      };
+
       if (!testId) {
-        const { data } = await api.post('/tests', form);
+        const { data } = await api.post('/tests', payload);
         setTestId(data.test._id);
         setSaved(true);
+        setSuccess(true);
       } else {
-        await api.put(`/tests/${testId}`, form);
+        await api.put(`/tests/${testId}`, payload);
+        setSuccess(true);
       }
+      setTimeout(() => setSuccess(false), 3000);
     } catch (e) { setError(e.response?.data?.message || 'Save failed'); }
     setSaving(false);
   };
@@ -348,15 +365,21 @@ export default function TestBuilder() {
       {/* Test Info */}
       <div className="card space-y-4">
         <h2 className="text-lg font-semibold flex items-center gap-2"><HiBookOpen className="w-5 h-5 text-primary-400" /> Test Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div><label className="label">Title *</label><input className="input" placeholder="e.g. Midterm Exam" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
+          <div><label className="label">Subject *</label><input className="input" placeholder="e.g. Mathematics" value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} /></div>
           <div><label className="label">Duration (minutes)</label><input type="number" className="input" value={form.duration} onChange={e => setForm(p => ({ ...p, duration: +e.target.value }))} /></div>
+          <div><label className="label">Pass Mark (%)</label><input type="number" className="input" value={form.passmark} onChange={e => setForm(p => ({ ...p, passmark: +e.target.value }))} /></div>
           <div><label className="label">Scheduled Date & Time</label><input type="datetime-local" className="input" value={form.scheduledDate} onChange={e => setForm(p => ({ ...p, scheduledDate: e.target.value }))} /></div>
           <div><label className="label">Description</label><input className="input" placeholder="Optional description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
         </div>
-        <button onClick={saveTest} disabled={saving} className="btn-primary flex items-center gap-2">
-          <HiOutlineDocumentCheck className="w-5 h-5" /> {saving ? 'Saving...' : saved ? 'Update Test Details' : 'Save Test & Add Questions'}
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={saveTest} disabled={saving} className={`btn-primary flex items-center gap-2 transition-all ${success ? 'bg-green-600 border-green-500' : ''}`}>
+            {success ? <HiCheck className="w-5 h-5" /> : <HiOutlineDocumentCheck className="w-5 h-5" />}
+            {saving ? 'Saving...' : success ? 'Saved Successfully!' : saved ? 'Update Test Details' : 'Save Test & Add Questions'}
+          </button>
+          {success && <span className="text-green-500 text-sm font-medium animate-in fade-in slide-in-from-left-2">All changes saved!</span>}
+        </div>
       </div>
 
       {saved && (

@@ -19,6 +19,32 @@ export default function Tests() {
   const divider      = isDark ? 'border-gray-800' : 'border-gray-200';
   const skeletonBg   = isDark ? 'bg-gray-900' : 'bg-gray-200';
   const iconMuted    = isDark ? 'text-gray-700' : 'text-gray-300';
+  const badgeStart   = isDark ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-indigo-50 text-indigo-600 border-indigo-100';
+
+  const formatDateTime = (iso) => {
+    if (!iso) return 'Flexible';
+    const d = new Date(iso);
+    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getRelativeTime = (iso) => {
+    if (!iso) return null;
+    const diff = new Date(iso) - new Date();
+    const mins = Math.round(diff / 60000);
+    if (Math.abs(mins) < 1) return 'Just now';
+    if (mins > 0) {
+      if (mins < 60) return `Starts in ${mins}m`;
+      const hours = Math.round(mins / 60);
+      if (hours < 24) return `Starts in ${hours}h`;
+      return `Starts in ${Math.round(hours / 24)}d`;
+    } else {
+      const pastIdx = Math.abs(mins);
+      if (pastIdx < 60) return `${pastIdx}m ago`;
+      const hours = Math.round(pastIdx / 60);
+      if (hours < 24) return `${hours}h ago`;
+      return `${Math.round(hours / 24)}d ago`;
+    }
+  };
 
   useEffect(() => {
     api.get('/tests').then(({ data }) => setTests(data.tests)).catch(() => {}).finally(() => setLoading(false));
@@ -69,14 +95,27 @@ export default function Tests() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{t.title}</h3>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider ${textSub}`}>{t.subject || 'General'}</p>
                 </div>
-                <button onClick={() => togglePublish(t)} className={`p-1 ml-2 shrink-0 ${metaText} hover:text-primary-400 transition-colors`}>
-                  {t.isPublished ? <HiOutlineEye className="w-5 h-5 text-emerald-400" /> : <HiOutlineEyeSlash className="w-5 h-5" />}
-                </button>
+                <div className="flex flex-col items-end shrink-0 ml-4">
+                  <button onClick={() => togglePublish(t)} className={`p-1 ${metaText} hover:text-primary-400 transition-colors`}>
+                    {t.isPublished ? <HiOutlineEye className="w-5 h-5 text-emerald-400" /> : <HiOutlineEyeSlash className="w-5 h-5" />}
+                  </button>
+                  {t.scheduledDate && (
+                    <span className={`text-[8px] font-black uppercase tracking-tighter mt-1 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                      {getRelativeTime(t.scheduledDate)}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className={`flex items-center gap-4 text-sm ${metaText} mb-4`}>
-                <span className="flex items-center gap-1"><HiClock className="w-3.5 h-3.5" />{t.duration}m</span>
-                <span className="flex items-center gap-1"><HiBookOpen className="w-3.5 h-3.5" />{t.questions?.length || 0} Qs</span>
+              <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] ${metaText} mb-4`}>
+                <span className="flex items-center gap-1.5"><HiClock className="w-4 h-4 text-primary-500" />{t.duration}m</span>
+                <span className="flex items-center gap-1.5"><HiBookOpen className="w-4 h-4 text-primary-500" />{t.questions?.length || 0} Qs</span>
+                {t.scheduledDate && (
+                  <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded border ${badgeStart}`}>
+                    {formatDateTime(t.scheduledDate)}
+                  </span>
+                )}
               </div>
               <div className={`flex items-center gap-2 pt-3 border-t ${divider}`}>
                 <button onClick={() => navigate(`/tests/${t._id}/edit`)}

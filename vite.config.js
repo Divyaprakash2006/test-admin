@@ -30,12 +30,10 @@ export default defineConfig({
     ],
   },
   server: {
-    host: '0.0.0.0',
+    host: true,
     port: 5173,
-    // Removing fixed HMR host to allow it to match localhost/127.0.0.1 dynamically
-    hmr: {
-      protocol: 'ws',
-    },
+    strictPort: true,
+    hmr: false,
     proxy: {
       '/api': {
         target: 'https://test-backend-8l27.onrender.com',

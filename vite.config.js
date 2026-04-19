@@ -9,7 +9,7 @@ const __dirname = dirname(__filename)
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react({ fastRefresh: false })],
   resolve: {
     alias: {
       'react': resolve(__dirname, 'node_modules/react'),

@@ -60,8 +60,8 @@ export default function Sidebar() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
         <div className="flex items-center gap-4 h-[var(--header-height)]">
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-600/20 overflow-hidden">
-              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1 invert brightness-0" />
+            <div className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-500 overflow-hidden ${isDark ? 'bg-white/90 shadow-indigo-500/20 shadow-lg' : 'bg-white shadow-sm border border-gray-100'}`}>
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover scale-110" />
             </div>
             <div className="flex flex-col leading-tight justify-center">
               <div className="flex items-baseline gap-0.5">

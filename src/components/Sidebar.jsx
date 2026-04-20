@@ -14,6 +14,7 @@ import {
   HiMoon,
   HiCog6Tooth,
 } from 'react-icons/hi2';
+import NotificationBell from './NotificationBell';
 
 
 const navItems = [
@@ -80,6 +81,10 @@ export default function Sidebar() {
               </NavLink>
             ))}
           </nav>
+          
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationBell />
+          </div>
 
           <div className="hidden md:flex items-center gap-3" ref={settingsRef}>
             <button

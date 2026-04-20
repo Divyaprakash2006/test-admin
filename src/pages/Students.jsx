@@ -303,29 +303,31 @@ function StudentDetailsModal({ studentId, editInitially = false, onClose, onUpda
   const [editMode, setEditMode] = useState(editInitially);
   const [form, setForm] = useState({ name: '', email: '', password: '', batch: '', rollNo: '' });
   const [updating, setUpdating] = useState(false);
+  const [resettingId, setResettingId] = useState(null);
   const [error, setError] = useState('');
 
   const panelBg      = isDark ? 'bg-gray-900 border-gray-800'  : 'bg-white border-gray-200';
   const headerBorder = isDark ? 'border-gray-800' : 'border-gray-200';
   const textSub      = isDark ? 'text-gray-400' : 'text-gray-500';
 
+  const fetchDetails = async () => {
+    try {
+      const { data } = await api.get(`/students/${studentId}`);
+      setStudent(data.student);
+      setResults(data.results);
+      setForm({
+        name: data.student.name || '',
+        email: data.student.email || '',
+        password: '',
+        batch: data.student.batch || '',
+        rollNo: data.student.rollNo || ''
+      });
+    } catch (err) { setError('Failed to load student details'); }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const { data } = await api.get(`/students/${studentId}`);
-        setStudent(data.student);
-        setResults(data.results);
-        setForm({
-          name: data.student.name || '',
-          email: data.student.email || '',
-          password: '',
-          batch: data.student.batch || '',
-          rollNo: data.student.rollNo || ''
-        });
-      } catch (err) { setError('Failed to load student details'); }
-      setLoading(false);
-    };
-    fetch();
+    fetchDetails();
   }, [studentId]);
 
   const handleUpdate = async (e) => {
@@ -341,6 +343,16 @@ function StudentDetailsModal({ studentId, editInitially = false, onClose, onUpda
       onUpdated();
     } catch (err) { setError(err.response?.data?.message || 'Update failed'); }
     setUpdating(false);
+  };
+
+  const handleResetAttempt = async (testId) => {
+    if (!window.confirm('Reset this test attempt? This will delete the student\'s progress and score.')) return;
+    setResettingId(testId);
+    try {
+      await api.delete(`/students/${studentId}/tests/${testId}/reset`);
+      await fetchDetails();
+    } catch (err) { setError('Failed to reset attempt'); }
+    setResettingId(null);
   };
 
   if (loading) return (
@@ -429,12 +441,13 @@ function StudentDetailsModal({ studentId, editInitially = false, onClose, onUpda
                           <th className="px-5 py-3 font-semibold text-xs text-gray-400">TEST TITLE</th>
                           <th className="px-5 py-3 font-semibold text-xs text-gray-400">SCORE</th>
                           <th className="px-5 py-3 font-semibold text-xs text-gray-400">STATUS</th>
-                          <th className="px-5 py-3 font-semibold text-xs text-gray-400 text-right">DATE</th>
+                          <th className="px-5 py-3 font-semibold text-xs text-gray-400">DATE</th>
+                          <th className="px-5 py-3 font-semibold text-xs text-gray-400 text-right">ACTIONS</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
                         {results.map(r => (
-                          <tr key={r._id} className="hover:bg-white/[0.02] transition-colors">
+                          <tr key={r._id} className="hover:bg-white/[0.02] transition-colors group">
                             <td className="px-5 py-4">
                               <p className="font-medium">{r.test?.title}</p>
                               <p className={`text-[10px] font-bold ${textSub} uppercase tracking-tighter`}>{r.test?.subject}</p>
@@ -452,8 +465,18 @@ function StudentDetailsModal({ studentId, editInitially = false, onClose, onUpda
                                 {r.percentage >= 40 ? 'Pass' : 'Fail'}
                               </span>
                             </td>
-                            <td className={`px-5 py-4 text-right text-xs font-mono opacity-50`}>
+                            <td className={`px-5 py-4 text-xs font-mono opacity-50`}>
                               {new Date(r.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-5 py-4 text-right">
+                              <button
+                                onClick={() => handleResetAttempt(r.test?._id)}
+                                disabled={resettingId === r.test?._id}
+                                className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                title="Reset Attempt"
+                              >
+                                <HiArrowPath className={`w-4 h-4 ${resettingId === r.test?._id ? 'animate-spin' : ''}`} />
+                              </button>
                             </td>
                           </tr>
                         ))}

@@ -30,7 +30,7 @@ export default function TestBuilder() {
   const isDark    = theme === 'dark';
   const isEdit    = Boolean(id);
 
-  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, scheduledDate: '', expiryDate: '' });
+  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, scheduledDate: '', expiryDate: '', unlimitedAttempts: false, maxAttempts: 1 });
   const [questions, setQuestions] = useState([emptyQ()]);
   const [activeQ, setActiveQ]   = useState(0);
   const [saving, setSaving]     = useState(false);
@@ -77,7 +77,9 @@ export default function TestBuilder() {
           duration: t.duration, 
           passmark: t.passmark || 0,
           scheduledDate: schedStr,
-          expiryDate: expiryStr
+          expiryDate: expiryStr,
+          unlimitedAttempts: t.unlimitedAttempts || false,
+          maxAttempts: t.maxAttempts || 1
         });
         if (t.questions?.length) setQuestions(t.questions);
       }).catch(() => setError('Failed to load test'));
@@ -380,6 +382,22 @@ export default function TestBuilder() {
           <div><label className="label">Scheduled Date & Time (Start)</label><input type="datetime-local" className="input" value={form.scheduledDate} onChange={e => setForm(p => ({ ...p, scheduledDate: e.target.value }))} /></div>
           <div><label className="label">Expiry Date & Time (End)</label><input type="datetime-local" className="input" value={form.expiryDate} onChange={e => setForm(p => ({ ...p, expiryDate: e.target.value }))} /></div>
           <div><label className="label">Description</label><input className="input" placeholder="Optional description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
+          <div className="flex items-center gap-6 py-2 px-1">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className={`w-10 h-6 rounded-full p-1 transition-all duration-300 ${form.unlimitedAttempts ? 'bg-primary-600' : 'bg-gray-400 dark:bg-gray-700'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white transition-all duration-300 ${form.unlimitedAttempts ? 'translate-x-4' : 'translate-x-0'}`} />
+              </div>
+              <input type="checkbox" className="hidden" checked={form.unlimitedAttempts} onChange={e => setForm(p => ({ ...p, unlimitedAttempts: e.target.checked }))} />
+              <span className={`text-sm font-bold uppercase tracking-wider ${form.unlimitedAttempts ? 'text-primary-500' : 'text-gray-500'}`}>Unlimited Attempts</span>
+            </label>
+            {!form.unlimitedAttempts && (
+              <div className="flex items-center gap-3">
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Max Attempts:</label>
+                <input type="number" className="input w-20 py-1 text-center font-bold" min="1" value={form.maxAttempts} 
+                  onChange={e => setForm(p => ({ ...p, maxAttempts: Math.max(1, +e.target.value) }))} />
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <button onClick={saveTest} disabled={saving} className={`btn-primary flex items-center gap-2 transition-all ${success ? 'bg-green-600 border-green-500' : ''}`}>

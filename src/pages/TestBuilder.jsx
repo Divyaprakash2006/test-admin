@@ -30,7 +30,7 @@ export default function TestBuilder() {
   const isDark    = theme === 'dark';
   const isEdit    = Boolean(id);
 
-  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, scheduledDate: '' });
+  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, scheduledDate: '', expiryDate: '' });
   const [questions, setQuestions] = useState([emptyQ()]);
   const [activeQ, setActiveQ]   = useState(0);
   const [saving, setSaving]     = useState(false);
@@ -65,13 +65,19 @@ export default function TestBuilder() {
           const d = new Date(t.scheduledDate);
           schedStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
         }
+        let expiryStr = '';
+        if (t.expiryDate) {
+          const d = new Date(t.expiryDate);
+          expiryStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        }
         setForm({ 
           title: t.title, 
           subject: t.subject || '', 
           description: t.description || '', 
           duration: t.duration, 
           passmark: t.passmark || 0,
-          scheduledDate: schedStr 
+          scheduledDate: schedStr,
+          expiryDate: expiryStr
         });
         if (t.questions?.length) setQuestions(t.questions);
       }).catch(() => setError('Failed to load test'));
@@ -84,7 +90,8 @@ export default function TestBuilder() {
       // Ensure scheduledDate is sent as a proper ISO string (standardizes timezone)
       const payload = { 
         ...form, 
-        scheduledDate: form.scheduledDate ? new Date(form.scheduledDate).toISOString() : null 
+        scheduledDate: form.scheduledDate ? new Date(form.scheduledDate).toISOString() : null,
+        expiryDate: form.expiryDate ? new Date(form.expiryDate).toISOString() : null
       };
 
       if (!testId) {
@@ -370,7 +377,8 @@ export default function TestBuilder() {
           <div><label className="label">Subject *</label><input className="input" placeholder="e.g. Mathematics" value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} /></div>
           <div><label className="label">Duration (minutes)</label><input type="number" className="input" value={form.duration} onChange={e => setForm(p => ({ ...p, duration: +e.target.value }))} /></div>
           <div><label className="label">Pass Mark (%)</label><input type="number" className="input" value={form.passmark} onChange={e => setForm(p => ({ ...p, passmark: +e.target.value }))} /></div>
-          <div><label className="label">Scheduled Date & Time</label><input type="datetime-local" className="input" value={form.scheduledDate} onChange={e => setForm(p => ({ ...p, scheduledDate: e.target.value }))} /></div>
+          <div><label className="label">Scheduled Date & Time (Start)</label><input type="datetime-local" className="input" value={form.scheduledDate} onChange={e => setForm(p => ({ ...p, scheduledDate: e.target.value }))} /></div>
+          <div><label className="label">Expiry Date & Time (End)</label><input type="datetime-local" className="input" value={form.expiryDate} onChange={e => setForm(p => ({ ...p, expiryDate: e.target.value }))} /></div>
           <div><label className="label">Description</label><input className="input" placeholder="Optional description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
         </div>
         <div className="flex items-center gap-4">

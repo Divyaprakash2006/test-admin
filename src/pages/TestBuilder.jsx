@@ -31,7 +31,7 @@ export default function TestBuilder() {
   const isDark    = theme === 'dark';
   const isEdit    = Boolean(id);
 
-  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, scheduledDate: '', expiryDate: '', unlimitedAttempts: false, maxAttempts: 1 });
+  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, scheduledDate: '', expiryDate: '', unlimitedAttempts: false, maxAttempts: 1, shuffleQuestions: false });
   const [questions, setQuestions] = useState([emptyQ()]);
   const [activeQ, setActiveQ]   = useState(0);
   const [saving, setSaving]     = useState(false);
@@ -80,7 +80,8 @@ export default function TestBuilder() {
           scheduledDate: schedStr,
           expiryDate: expiryStr,
           unlimitedAttempts: t.unlimitedAttempts || false,
-          maxAttempts: t.maxAttempts || 1
+          maxAttempts: t.maxAttempts || 1,
+          shuffleQuestions: t.shuffleQuestions || false
         });
         if (t.questions?.length) setQuestions(t.questions);
       }).catch(() => setError('Failed to load test'));
@@ -398,6 +399,13 @@ export default function TestBuilder() {
                   onChange={e => setForm(p => ({ ...p, maxAttempts: Math.max(1, +e.target.value) }))} />
               </div>
             )}
+            <label className="flex items-center gap-3 cursor-pointer group ml-2">
+              <div className={`w-10 h-6 rounded-full p-1 transition-all duration-300 ${form.shuffleQuestions ? 'bg-primary-600' : 'bg-gray-400 dark:bg-gray-700'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white transition-all duration-300 ${form.shuffleQuestions ? 'translate-x-4' : 'translate-x-0'}`} />
+              </div>
+              <input type="checkbox" className="hidden" checked={form.shuffleQuestions} onChange={e => setForm(p => ({ ...p, shuffleQuestions: e.target.checked }))} />
+              <span className={`text-sm font-bold uppercase tracking-wider ${form.shuffleQuestions ? 'text-primary-500' : 'text-gray-500'}`}>Shuffle Questions</span>
+            </label>
           </div>
         </div>
         <div className="flex items-center gap-4">

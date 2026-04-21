@@ -179,7 +179,7 @@ export default function TestBuilder() {
       const answerLineIndex = lines.findIndex(l => l.toUpperCase().startsWith('ANSWER:'));
       if (answerLineIndex === -1) return null;
 
-      const answerChar = lines[answerLineIndex].split(':')[1].trim().toUpperCase();
+      const answerPart = lines[answerLineIndex].split(':')[1].trim().toUpperCase();
       
       // Question text is everything before the first option
       const firstOptIndex = lines.findIndex(l => /^[A-Z][\.)]/.test(l));
@@ -187,17 +187,23 @@ export default function TestBuilder() {
       
       const questionText = lines.slice(0, firstOptIndex).join(' ').replace(/^\s*\d+[\.\)]\s*/, '');
       const optionLines = lines.slice(firstOptIndex, answerLineIndex).filter(l => /^[A-Z][\.)]/.test(l));
-      
       const options = optionLines.map(l => l.replace(/^[A-Z][\.)]\s*/, ''));
-      const answerLetterToIndex = answerChar.charCodeAt(0) - 65;
-      const correctAnswer = options[answerLetterToIndex] || '';
+
+      // Detect multiple answers (e.g., "B,C,E" or "B C E" or "BCE")
+      const answerChars = answerPart.match(/[A-Z]/g) || [];
+      const isMulti = answerChars.length > 1;
+      
+      const correctAnswersList = answerChars.map(char => {
+        const idx = char.charCodeAt(0) - 65;
+        return options[idx] || '';
+      }).filter(val => val !== '');
 
       return {
         ...emptyQ(),
-        type: 'mcq-single',
+        type: isMulti ? 'mcq-multi' : 'mcq-single',
         text: questionText,
         options: options.length >= 2 ? options : ['', '', '', ''],
-        correctAnswer: correctAnswer,
+        correctAnswer: isMulti ? correctAnswersList : (correctAnswersList[0] || ''),
         _temp: Date.now() + Math.random()
       };
     }).filter(q => q !== null);
@@ -265,7 +271,7 @@ export default function TestBuilder() {
               <button onClick={() => {
                 const newSel = checked ? sel.filter(s => s !== opt) : [...sel, opt];
                 updateQ(activeQ, { correctAnswer: newSel });
-              }} className={`p-2 rounded-lg border transition-all shrink-0 ${checkBtn(checked)}`}>
+              }} className={`p-2 rounded border transition-all shrink-0 ${checkBtn(checked)}`}>
                 <HiCheck className="w-4 h-4" />
               </button>
               <input className="input flex-1" placeholder={`Option ${oi + 1}`} value={opt}

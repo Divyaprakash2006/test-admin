@@ -18,6 +18,7 @@ const TYPES = [
 const emptyQ = () => ({
   type: 'mcq-single', text: '', options: ['', '', '', ''],
   correctAnswer: '', marks: 1, tags: [], explanation: '',
+  shuffleOptions: false,
   testCases: [],
   allowedLanguages: ['javascript', 'python', 'java', 'cpp'],
   _temp: Date.now()
@@ -484,6 +485,18 @@ export default function TestBuilder() {
                 </div>
               )}
             </div>
+            {(q.type === 'mcq-single' || q.type === 'mcq-multi') && (
+              <div className="flex items-center gap-3 py-1">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className={`w-9 h-5 rounded-full p-1 transition-all duration-300 ${q.shuffleOptions ? 'bg-primary-600' : 'bg-gray-400 dark:bg-gray-700'}`}>
+                    <div className={`w-3 h-3 rounded-full bg-white transition-all duration-300 ${q.shuffleOptions ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </div>
+                  <input type="checkbox" className="hidden" checked={q.shuffleOptions || false} 
+                    onChange={e => updateQ(activeQ, { shuffleOptions: e.target.checked })} />
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${q.shuffleOptions ? 'text-primary-500' : 'text-gray-500'}`}>Shuffle Options</span>
+                </label>
+              </div>
+            )}
             <div>
               <label className="label">Tags (comma-separated)</label>
               <input className="input" placeholder="algebra, calculus" value={(q.tags || []).join(', ')}

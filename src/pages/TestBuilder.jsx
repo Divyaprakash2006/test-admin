@@ -41,6 +41,7 @@ export default function TestBuilder() {
   const [error, setError]       = useState('');
   const [showAikenModal, setShowAikenModal] = useState(false);
   const [aikenText, setAikenText]           = useState('');
+  const [replaceOnImport, setReplaceOnImport] = useState(false);
 
   // Theme tokens
   const textSub     = isDark ? 'text-gray-400' : 'text-gray-500';
@@ -137,10 +138,11 @@ export default function TestBuilder() {
       const { data } = await api.post(`/tests/${testId}/questions/bulk`, { questions: unsaved });
       // Map returned IDs back to questions
       const savedQs = data.questions;
+      // Map returned questions back by order (safer than text matching)
+      let savedIdx = 0;
       const newQs = questions.map(q => {
         if (q._id) return q;
-        const matching = savedQs.find(sq => sq.text === q.text); // simple match by text
-        return matching || q;
+        return savedQs[savedIdx++] || q;
       });
       setQuestions(newQs);
     } catch (e) { setError(e.response?.data?.message || 'Bulk save failed'); }
@@ -168,8 +170,29 @@ export default function TestBuilder() {
     setQuestions(qs);
   };
 
-  const handleAikenImport = () => {
+  const handleAikenImport = async () => {
     if (!aikenText.trim()) return;
+    
+    if (replaceOnImport && questions.some(q => q._id)) {
+      if (!window.confirm("This will PERMANENTLY DELETE all current questions in this test and replace them. Continue?")) {
+        return;
+      }
+      setSaving(true);
+      try {
+        await api.delete(`/tests/${testId}/questions/all`);
+        setQuestions([]);
+        setActiveQ(0);
+      } catch (e) {
+        setError("Failed to clear existing questions");
+        setSaving(false);
+        return;
+      }
+      setSaving(false);
+    } else if (replaceOnImport) {
+      // Just clear local state if none saved to DB yet
+      setQuestions([]);
+      setActiveQ(0);
+    }
     
     const blocks = aikenText.trim().split(/\n\s*\n/);
     const newQuestions = blocks.map(block => {
@@ -218,6 +241,7 @@ export default function TestBuilder() {
       });
       setShowAikenModal(false);
       setAikenText('');
+      setReplaceOnImport(false);
     } else {
       setError('No valid Aiken questions found. Please check the format.');
     }
@@ -562,6 +586,17 @@ export default function TestBuilder() {
               value={aikenText}
               onChange={(e) => setAikenText(e.target.value)}
             />
+
+            <div className="flex items-center mb-6">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800" 
+                  checked={replaceOnImport} onChange={e => setReplaceOnImport(e.target.checked)} />
+                <div className="flex flex-col">
+                  <span className={`text-sm font-bold ${replaceOnImport ? 'text-red-500' : 'text-gray-500'}`}>Replace all existing questions</span>
+                  <span className="text-[10px] text-gray-400">Warning: This will delete current questions in this test.</span>
+                </div>
+              </label>
+            </div>
             
             <div className="flex justify-end gap-3">
               <button onClick={() => setShowAikenModal(false)} className="btn-secondary">Cancel</button>

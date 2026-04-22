@@ -30,6 +30,12 @@ const clampPercent = (value) => {
   return Math.min(100, Math.max(0, num));
 };
 
+const clampGradePoint = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.min(10, Math.max(0, num));
+};
+
 const normalizeMarks = (value) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return 0;
@@ -48,7 +54,7 @@ export default function TestBuilder() {
   const isDark    = theme === 'dark';
   const isEdit    = Boolean(id);
 
-  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, scheduledDate: '', expiryDate: '', unlimitedAttempts: false, maxAttempts: 1, shuffleQuestions: false });
+  const [form, setForm]         = useState({ title: '', subject: '', description: '', duration: 30, passmark: 0, gradingMode: 'percentage', scheduledDate: '', expiryDate: '', unlimitedAttempts: false, maxAttempts: 1, shuffleQuestions: false });
   const [questions, setQuestions] = useState([emptyQ()]);
   const [activeQ, setActiveQ]   = useState(0);
   const [saving, setSaving]     = useState(false);
@@ -95,6 +101,7 @@ export default function TestBuilder() {
           description: t.description || '', 
           duration: t.duration, 
           passmark: t.passmark || 0,
+          gradingMode: t.gradingMode || 'percentage',
           scheduledDate: schedStr,
           expiryDate: expiryStr,
           unlimitedAttempts: t.unlimitedAttempts || false,
@@ -112,6 +119,7 @@ export default function TestBuilder() {
       // Ensure scheduledDate is sent as a proper ISO string (standardizes timezone)
       const payload = { 
         ...form, 
+        passmark: form.gradingMode === 'grade-point' ? clampGradePoint(form.passmark) : clampPercent(form.passmark),
         scheduledDate: form.scheduledDate ? new Date(form.scheduledDate).toISOString() : null,
         expiryDate: form.expiryDate ? new Date(form.expiryDate).toISOString() : null
       };
@@ -445,7 +453,36 @@ export default function TestBuilder() {
           <div><label className="label">Title *</label><input className="input" placeholder="e.g. Midterm Exam" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
           <div><label className="label">Subject *</label><input className="input" placeholder="e.g. Mathematics" value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} /></div>
           <div><label className="label">Duration (minutes)</label><input type="number" className="input" value={form.duration} onChange={e => setForm(p => ({ ...p, duration: +e.target.value }))} /></div>
-          <div><label className="label">Pass Mark (%)</label><input type="number" min="0" max="100" step="0.1" className="input" value={form.passmark} onChange={e => setForm(p => ({ ...p, passmark: clampPercent(e.target.value) }))} /></div>
+          <div>
+            <label className="label">Grade Evaluation Mode</label>
+            <select
+              className="input"
+              value={form.gradingMode || 'percentage'}
+              onChange={e => setForm(p => ({
+                ...p,
+                gradingMode: e.target.value,
+                passmark: e.target.value === 'grade-point' ? clampGradePoint(p.passmark) : clampPercent(p.passmark),
+              }))}
+            >
+              <option value="percentage">Percentage</option>
+              <option value="grade-point">Grade Point</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">{form.gradingMode === 'grade-point' ? 'Pass Grade Point (0-10)' : 'Pass Mark (%)'}</label>
+            <input
+              type="number"
+              min="0"
+              max={form.gradingMode === 'grade-point' ? '10' : '100'}
+              step="0.1"
+              className="input"
+              value={form.passmark}
+              onChange={e => setForm(p => ({
+                ...p,
+                passmark: p.gradingMode === 'grade-point' ? clampGradePoint(e.target.value) : clampPercent(e.target.value),
+              }))}
+            />
+          </div>
           <div><label className="label">Scheduled Date & Time (Start)</label><input type="datetime-local" className="input" value={form.scheduledDate} onChange={e => setForm(p => ({ ...p, scheduledDate: e.target.value }))} /></div>
           <div><label className="label">Expiry Date & Time (End)</label><input type="datetime-local" className="input" value={form.expiryDate} onChange={e => setForm(p => ({ ...p, expiryDate: e.target.value }))} /></div>
           <div><label className="label">Description</label><input className="input" placeholder="Optional description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>

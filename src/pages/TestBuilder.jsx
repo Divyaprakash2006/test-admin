@@ -24,6 +24,23 @@ const emptyQ = () => ({
   _temp: Date.now()
 });
 
+const clampPercent = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.min(100, Math.max(0, num));
+};
+
+const normalizeMarks = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.max(0, num);
+};
+
+const markFmt = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num.toFixed(1) : '0.0';
+};
+
 export default function TestBuilder() {
   const navigate  = useNavigate();
   const { id }    = useParams();
@@ -276,11 +293,22 @@ export default function TestBuilder() {
         {(q.options || []).map((opt, oi) => (
           <div key={oi} className="flex gap-2">
             <button onClick={() => updateQ(activeQ, { correctAnswer: opt })}
-              className={`p-2 rounded-lg border transition-all shrink-0 ${checkBtn(q.correctAnswer === opt)}`}>
+              disabled={!String(opt || '').trim()}
+              className={`p-2 rounded-lg border transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${checkBtn(q.correctAnswer === opt)}`}>
               <HiCheck className="w-4 h-4" />
             </button>
             <input className="input flex-1" placeholder={`Option ${oi + 1}`} value={opt}
-              onChange={e => { const o = [...q.options]; o[oi] = e.target.value; updateQ(activeQ, { options: o }); }} />
+              onChange={e => {
+                const prevOpt = (q.options || [])[oi] || '';
+                const nextOpt = e.target.value;
+                const o = [...(q.options || [])];
+                o[oi] = nextOpt;
+                const updates = { options: o };
+                if ((q.correctAnswer || '') === prevOpt) {
+                  updates.correctAnswer = nextOpt;
+                }
+                updateQ(activeQ, updates);
+              }} />
           </div>
         ))}
       </div>
@@ -295,11 +323,18 @@ export default function TestBuilder() {
               <button onClick={() => {
                 const newSel = checked ? sel.filter(s => s !== opt) : [...sel, opt];
                 updateQ(activeQ, { correctAnswer: newSel });
-              }} className={`p-2 rounded border transition-all shrink-0 ${checkBtn(checked)}`}>
+              }} disabled={!String(opt || '').trim()} className={`p-2 rounded border transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${checkBtn(checked)}`}>
                 <HiCheck className="w-4 h-4" />
               </button>
               <input className="input flex-1" placeholder={`Option ${oi + 1}`} value={opt}
-                onChange={e => { const o = [...q.options]; o[oi] = e.target.value; updateQ(activeQ, { options: o }); }} />
+                onChange={e => {
+                  const prevOpt = (q.options || [])[oi] || '';
+                  const nextOpt = e.target.value;
+                  const o = [...(q.options || [])];
+                  o[oi] = nextOpt;
+                  const newSel = sel.map(s => (s === prevOpt ? nextOpt : s)).filter(Boolean);
+                  updateQ(activeQ, { options: o, correctAnswer: [...new Set(newSel)] });
+                }} />
             </div>
           );
         })}
@@ -370,10 +405,10 @@ export default function TestBuilder() {
                   </label>
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-bold uppercase ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Marks:</span>
-                    <input type="number" className="input text-xs py-1 w-20 text-center" min="0" value={tc.marks || 0}
+                    <input type="number" className="input text-xs py-1 w-20 text-center" min="0" step="0.1" value={tc.marks || 0}
                       onChange={e => {
                         const tcNew = [...q.testCases]; 
-                        tcNew[tci].marks = +e.target.value;
+                        tcNew[tci].marks = normalizeMarks(e.target.value);
                         const total = tcNew.reduce((sum, x) => sum + (Number(x.marks) || 0), 0);
                         updateQ(activeQ, { testCases: tcNew, marks: total });
                       }} />
@@ -410,7 +445,7 @@ export default function TestBuilder() {
           <div><label className="label">Title *</label><input className="input" placeholder="e.g. Midterm Exam" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} /></div>
           <div><label className="label">Subject *</label><input className="input" placeholder="e.g. Mathematics" value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} /></div>
           <div><label className="label">Duration (minutes)</label><input type="number" className="input" value={form.duration} onChange={e => setForm(p => ({ ...p, duration: +e.target.value }))} /></div>
-          <div><label className="label">Pass Mark (%)</label><input type="number" className="input" value={form.passmark} onChange={e => setForm(p => ({ ...p, passmark: +e.target.value }))} /></div>
+          <div><label className="label">Pass Mark (%)</label><input type="number" min="0" max="100" step="0.1" className="input" value={form.passmark} onChange={e => setForm(p => ({ ...p, passmark: clampPercent(e.target.value) }))} /></div>
           <div><label className="label">Scheduled Date & Time (Start)</label><input type="datetime-local" className="input" value={form.scheduledDate} onChange={e => setForm(p => ({ ...p, scheduledDate: e.target.value }))} /></div>
           <div><label className="label">Expiry Date & Time (End)</label><input type="datetime-local" className="input" value={form.expiryDate} onChange={e => setForm(p => ({ ...p, expiryDate: e.target.value }))} /></div>
           <div><label className="label">Description</label><input className="input" placeholder="Optional description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} /></div>
@@ -479,7 +514,7 @@ export default function TestBuilder() {
                   className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all ${activeQ === i ? listActive : listItem}`}>
                   <HiArrowsUpDown className={`w-4 h-4 ${gripColor}`} />
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs ${textSub}`}>Q{i + 1} · {q.marks} Mark{(q.marks || 1) !== 1 ? 's' : ''}</p>
+                    <p className={`text-xs ${textSub}`}>Q{i + 1} · {markFmt(q.marks)} Mark{Number(q.marks || 0) !== 1 ? 's' : ''}</p>
                     <p className="text-sm truncate">{q.text || 'Untitled Question'}</p>
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -519,7 +554,7 @@ export default function TestBuilder() {
               {q.type !== 'coding' && (
                 <div>
                   <label className="label">Marks</label>
-                  <input type="number" className="input" min="1" value={q.marks || 1} onChange={e => updateQ(activeQ, { marks: +e.target.value })} />
+                  <input type="number" className="input" min="0" step="0.1" value={q.marks || 1} onChange={e => updateQ(activeQ, { marks: normalizeMarks(e.target.value) })} />
                 </div>
               )}
             </div>

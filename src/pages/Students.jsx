@@ -6,6 +6,11 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import api from '../api';
 
+const markFmt = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num.toFixed(1) : '0.0';
+};
+
 function AddStudentModal({ onClose, onAdded, isDark }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', batch: '', rollNo: '' });
   const [loading, setLoading] = useState(false);
@@ -457,7 +462,7 @@ function StudentDetailsModal({ studentId, editInitially = false, onClose, onUpda
                                 <div className="flex-1 h-2 w-16 bg-gray-800 rounded-full overflow-hidden">
                                   <div className={`h-full ${r.percentage >= 40 ? 'bg-emerald-500' : 'bg-red-500'}`} style={{ width: `${r.percentage}%` }} />
                                 </div>
-                                <span className="font-bold text-xs">{r.score}/{r.totalMarks}</span>
+                                <span className="font-bold text-xs">{markFmt(r.score)}/{markFmt(r.totalMarks)}</span>
                               </div>
                             </td>
                             <td className="px-5 py-4">

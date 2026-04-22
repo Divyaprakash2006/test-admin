@@ -7,6 +7,11 @@ import api from '../api';
 const RANGE_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#6366f1', '#10b981'];
 const RANGES = ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'];
 
+const markFmt = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num.toFixed(1) : '0.0';
+};
+
 function exportCSV(results) {
   const rows = [
     ['Student', 'Email', 'Test', 'Subject', 'Score', 'Total', 'Percentage', 'Pass/Fail', 'Time Taken (s)'],
@@ -207,7 +212,7 @@ export default function Results() {
                         <p className={`text-[10px] ${textSub} opacity-60 uppercase tracking-tighter`}>{r.test?.subject}</p>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="font-bold">{r.score}/{r.totalMarks}</span>
+                        <span className="font-bold">{markFmt(r.score)}/{markFmt(r.totalMarks)}</span>
                         <p className={`text-[10px] ${textSub}`}>{r.percentage}%</p>
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -259,7 +264,7 @@ export default function Results() {
                    <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-500/5">
                       <div className="flex flex-col">
                         <span className={`text-[8px] uppercase font-black tracking-widest ${textSub} opacity-50`}>Score</span>
-                        <span className="text-xs font-bold">{r.score}/{r.totalMarks}</span>
+                        <span className="text-xs font-bold">{markFmt(r.score)}/{markFmt(r.totalMarks)}</span>
                       </div>
                    </div>
                    <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-500/5">
